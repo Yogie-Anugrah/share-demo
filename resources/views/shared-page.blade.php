@@ -70,78 +70,174 @@ $(function(){
         let name = $(this).data('name');
 
         // Red Note/Xiaohongshu: Show modal, preview, then share
+        // if(key === 'rednote') {
+        //     $('#rednote-modal-body').html(
+        //         `<div class="text-center py-4">
+        //             <div class="spinner-border text-primary" role="status"></div>
+        //             <p>Loading...</p>
+        //         </div>`
+        //     );
+        //     $('#share-rednote-btn').hide();
+
+        //     $.ajax({
+        //         url: api,
+        //         headers: { 'store-token': token },
+        //         success: function(res) {
+        //             if(res.code !== 200 || !res.data || !res.data.info){
+        //                 $('#rednote-modal-body').html('<div class="alert alert-danger">Failed to load content.</div>');
+        //                 return;
+        //             }
+        //             let info = res.data.info;
+        //             let config = res.data.config || {};
+        //             redNoteUrl = `https://www.xiaohongshu.com/explore/${info.id}?token=${token}`;
+        //             let html = '';
+        //             if(info.image)
+        //                 html += `<img src="${info.image}" class="preview-img mb-2" alt="cover">`;
+        //             if(info.title)
+        //                 html += `<h5 class="mb-2">${info.title}</h5>`;
+        //             if(info.content)
+        //                 html += `<div class="mb-2" style="white-space:pre-line;">${info.content}</div>`;
+        //             if(config.shareInfo && config.shareInfo.images && config.shareInfo.images.length) {
+        //                 html += `<div class="mb-2">Images:<br>`;
+        //                 config.shareInfo.images.forEach(img =>
+        //                     html += `<img src="${img}" class="preview-img mb-1" style="max-height:110px;">`
+        //                 );
+        //                 html += `</div>`;
+        //             }
+        //             $('#rednote-modal-body').html(html);
+        //             $('#share-rednote-btn').show().off('click').on('click', function() {
+        //                 window.open(redNoteUrl, '_blank');
+        //                 $('#rednoteModal').modal('hide');
+        //             });
+        //         },
+        //         error: function() {
+        //             $('#rednote-modal-body').html('<div class="alert alert-danger">Failed to load content.</div>');
+        //         }
+        //     });
+
+        //     let modal = new bootstrap.Modal(document.getElementById('rednoteModal'));
+        //     modal.show();
+
+        // } else {
+        //     // Platform lain: langsung fetch API lalu redirect ke url dari API
+        //     $.ajax({
+        //         url: api,
+        //         headers: { 'store-token': token },
+        //         success: function(res) {
+        //             if(res.code !== 200 || !res.data || !res.data.info){
+        //                 alert('Failed to fetch share URL.');
+        //                 return;
+        //             }
+        //             let url = res.data.info.url;
+        //             if(!url) {
+        //                 alert('No share URL available for this platform.');
+        //                 return;
+        //             }
+        //             window.open(url, '_blank');
+        //         },
+        //         error: function() {
+        //             alert('Error fetching share URL.');
+        //         }
+        //     });
+        // }
+
         if(key === 'rednote') {
-            $('#rednote-modal-body').html(
-                `<div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p>Loading...</p>
-                </div>`
-            );
-            $('#share-rednote-btn').hide();
-
+            // Ganti jadi ambil API → redirect ke note-view page
             $.ajax({
                 url: api,
                 headers: { 'store-token': token },
                 success: function(res) {
                     if(res.code !== 200 || !res.data || !res.data.info){
-                        $('#rednote-modal-body').html('<div class="alert alert-danger">Failed to load content.</div>');
+                        alert('Failed to load Red Note content.');
                         return;
                     }
-                    let info = res.data.info;
+
+                    const info = res.data.info;
                     let config = res.data.config || {};
-                    redNoteUrl = `https://www.xiaohongshu.com/explore/${info.id}?token=${token}`;
-                    let html = '';
-                    if(info.image)
-                        html += `<img src="${info.image}" class="preview-img mb-2" alt="cover">`;
-                    if(info.title)
-                        html += `<h5 class="mb-2">${info.title}</h5>`;
-                    if(info.content)
-                        html += `<div class="mb-2" style="white-space:pre-line;">${info.content}</div>`;
-                    if(config.shareInfo && config.shareInfo.images && config.shareInfo.images.length) {
-                        html += `<div class="mb-2">Images:<br>`;
-                        config.shareInfo.images.forEach(img =>
-                            html += `<img src="${img}" class="preview-img mb-1" style="max-height:110px;">`
-                        );
-                        html += `</div>`;
-                    }
-                    $('#rednote-modal-body').html(html);
-                    $('#share-rednote-btn').show().off('click').on('click', function() {
-                        window.open(redNoteUrl, '_blank');
-                        $('#rednoteModal').modal('hide');
-                    });
+                    const title = encodeURIComponent(info.title_format || 'Untitled');
+                    const content = encodeURIComponent(info.content || '');
+                    const image = encodeURIComponent(info.image || '');
+                    const images = encodeURIComponent((config.shareInfo?.images || []).join(','));
+
+                    const fullPageUrl = `/note-view?title=${title}&content=${content}&image=${image}&images=${images}`;
+                    window.open(fullPageUrl, '_blank');
                 },
                 error: function() {
-                    $('#rednote-modal-body').html('<div class="alert alert-danger">Failed to load content.</div>');
+                    alert('Failed to load Red Note content.');
                 }
             });
 
-            let modal = new bootstrap.Modal(document.getElementById('rednoteModal'));
-            modal.show();
-
-        } else {
-            // Platform lain: langsung fetch API lalu redirect ke url dari API
-            $.ajax({
-                url: api,
-                headers: { 'store-token': token },
-                success: function(res) {
-                    if(res.code !== 200 || !res.data || !res.data.info){
-                        alert('Failed to fetch share URL.');
-                        return;
-                    }
-                    let url = res.data.info.url;
-                    if(!url) {
-                        alert('No share URL available for this platform.');
-                        return;
-                    }
-                    window.open(url, '_blank');
-                },
-                error: function() {
-                    alert('Error fetching share URL.');
-                }
-            });
+            return;
         }
+
     });
 });
 </script>
 </body>
 </html>
+
+
+{{-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shared Notes by Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 768px;
+            margin: auto;
+            padding: 2rem;
+            background: #f8f8f8;
+        }
+        .platform {
+            background: white;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+        .platform h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .platform p {
+            font-size: 0.95rem;
+            color: #555;
+        }
+        .open-button {
+            background: #2563eb;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Shared Notes by Platform</h1>
+
+@foreach ($platforms as $p)
+    @php
+        $encodedTitle = urlencode($p['title']);
+        $encodedContent = urlencode($p['content']);
+    @endphp
+
+    <div class="platform">
+        <h2>{{ $p['name'] }}</h2>
+        <p>{{ Str::limit(strip_tags($p['content']), 150) }}</p>
+        <a class="open-button"
+           href="/note-view?title={{ $encodedTitle }}&content={{ $encodedContent }}"
+           target="_blank">
+            Open Full Page
+        </a>
+    </div>
+@endforeach
+
+</body>
+</html> --}}

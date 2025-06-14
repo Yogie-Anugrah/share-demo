@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use League\CommonMark\CommonMarkConverter;
 
 class ShareController extends Controller
 {
@@ -53,6 +54,7 @@ class ShareController extends Controller
         ];
         return view('shared-page', compact('platforms', 'token'));
     }
+    
     public function proxyAPI(Request $request, $platform)
     {
         $token = $request->query('store_token');
@@ -77,4 +79,87 @@ class ShareController extends Controller
         return response($response->body(), $response->status())
             ->header('Content-Type', 'application/json');
     }
+    
+    public function renderPlatformNote($platform)
+    {
+        $token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJtZW1iZXIiLCJpZCI6MjA5fQ.-1yqPiWwYV_ltGSs9CHvjSrwZgU-hGL7IEAkK_sWDBx-JKsfEOOG5CVhORuuZuq6';
+        
+        $url = "http://127.0.0.1:8000/proxy-api/{$platform}?store_token={$token}";
+        $response = Http::timeout(5)->get($url); // timeout opsional
+        if (!$response->ok()) {
+            abort(404, 'Platform not found');
+        }
+
+        $data = $response->json();
+
+        $info = $data['data']['info'] ?? [];
+        $title = $info['title_format'] ?? 'Untitled';
+        $rawContent = $info['content'] ?? '';
+
+        $converter = new \League\CommonMark\CommonMarkConverter();
+        $htmlContent = $converter->convertToHtml($rawContent);
+
+        return view('red-note-single', [
+            'title' => $title,
+            'content' => $htmlContent
+        ]);
+    }
+    public function buildSharePage(Request $request)
+    {
+        $token = $request->query('store_token');
+
+        $platforms = [
+            [
+                'name' => 'Red Note',
+                'api' => 'xiaohongshu',
+                'key' => 'rednote',
+            ],
+            [
+                'name' => 'Google Review',
+                'api' => 'google_reviews',
+                'key' => 'google',
+            ],
+            [
+                'name' => 'Facebook',
+                'api' => 'facebook_comment',
+                'key' => 'facebook',
+            ],
+            [
+                'name' => 'Instagram',
+                'api' => 'instagram',
+                'key' => 'instagram',
+            ],
+            [
+                'name' => 'WhatsApp',
+                'api' => 'whatsapp_community',
+                'key' => 'whatsapp',
+            ],
+            [
+                'name' => 'Home',
+                'api' => 'home',
+                'key' => 'home',
+            ],
+        ];
+
+        $results = [];
+
+        foreach ($platforms as $p) {
+            $response = Http::withHeaders([
+                'store-token' => $token
+            ])->get("https://fanstagai.com/api/market/share/data/" . $p['api']);
+
+            $info = $response->json('data.info') ?? [];
+
+            $results[] = [
+                'name' => $p['name'],
+                'title' => $info['title_format'] ?? 'Untitled',
+                'content' => $info['content'] ?? '',
+            ];
+        }
+
+        return view('shared-page', [
+            'platforms' => $results
+        ]);
+    }
+
 }
